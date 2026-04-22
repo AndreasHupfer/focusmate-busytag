@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.focusmate-busytag"
+          path="/org/gnome/shell/extensions/focusmate-busytag/">
+
+    <key name="api-key" type="s">
+      <default>''</default>
+      <summary>Focusmate API Key</summary>
+      <description>Bearer token for Focusmate API authentication</description>
+    </key>
+
+    <key name="lookahead-minutes" type="i">
+      <default>10</default>
+      <range min="1" max="60"/>
+      <summary>Lookahead in Minuten</summary>
+      <description>Wechselt in UPCOMING-State wenn Session in dieser vielen Minuten beginnt</description>
+    </key>
+
+    <key name="color-active" type="s">
+      <default>'FF0000'</default>
+      <summary>LED-Farbe bei aktiver Session</summary>
+      <description>Hex-Farbcode (ohne #) für BusyTag LED während einer Focusmate-Session</description>
+    </key>
+
+    <key name="color-idle" type="s">
+      <default>'00FF00'</default>
+      <summary>LED-Farbe im Idle-Zustand</summary>
+      <description>Hex-Farbcode (ohne #) für BusyTag LED wenn keine Session aktiv</description>
+    </key>
+
+    <key name="led-bits" type="i">
+      <default>127</default>
+      <range min="1" max="127"/>
+      <summary>LED-Bitmaske</summary>
+      <description>Welche LEDs leuchten sollen (127 = alle 7 LEDs)</description>
+    </key>
+
+    <key name="show-when-idle" type="b">
+      <default>false</default>
+      <summary>Panel-Icon im Idle-Zustand anzeigen</summary>
+      <description>Wenn deaktiviert, wird das Panel-Icon ausgeblendet wenn keine Session naht</description>
+    </key>
+
+    <key name="poll-interval-far" type="i">
+      <default>300</default>
+      <range min="60" max="3600"/>
+      <summary>API-Polling-Intervall (weit)</summary>
+      <description>Sekunden zwischen API-Aufrufen wenn nächste Session mehr als 15 Minuten entfernt ist</description>
+    </key>
+
+    <key name="poll-interval-near" type="i">
+      <default>60</default>
+      <range min="10" max="300"/>
+      <summary>API-Polling-Intervall (nah)</summary>
+      <description>Sekunden zwischen API-Aufrufen wenn nächste Session weniger als 15 Minuten entfernt ist</description>
+    </key>
+
+  </schema>
+</schemalist>

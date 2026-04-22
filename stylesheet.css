@@ -1,0 +1,30 @@
+.focusmate-indicator {
+    spacing: 4px;
+}
+
+.focusmate-label {
+    font-size: 12px;
+}
+
+.focusmate-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    margin: 3px;
+}
+
+.focusmate-dot-idle {
+    background-color: #4CAF50;
+}
+
+.focusmate-dot-upcoming {
+    background-color: #FF9800;
+}
+
+.focusmate-dot-active {
+    background-color: #F44336;
+}
+
+.focusmate-dot-error {
+    background-color: #9E9E9E;
+}

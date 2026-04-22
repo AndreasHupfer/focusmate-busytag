@@ -1,0 +1,12 @@
+{
+    "uuid": "focusmate-busytag@reales",
+    "id": "focusmate-busytag@reales",
+    "name": "Focusmate BusyTag",
+    "description": "Shows Focusmate session countdown in panel and controls BusyTag LED via USB",
+    "version": 1,
+    "shell-version": ["45", "46", "47", "48"],
+    "url": "",
+    "gettext-domain": "focusmate-busytag",
+    "settings-schema": "org.gnome.shell.extensions.focusmate-busytag",
+    "session-modes": ["user"]
+}
