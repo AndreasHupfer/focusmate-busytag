@@ -28,6 +28,12 @@
       <description>Hex-Farbcode (ohne #) für BusyTag LED wenn keine Session aktiv</description>
     </key>
 
+    <key name="color-upcoming" type="s">
+      <default>'FFA500'</default>
+      <summary>LED-Farbe im Upcoming-Zustand</summary>
+      <description>Hex-Farbcode (ohne #) für BusyTag LED während des Countdowns zur nächsten Session</description>
+    </key>
+
     <key name="led-bits" type="i">
       <default>127</default>
       <range min="1" max="127"/>

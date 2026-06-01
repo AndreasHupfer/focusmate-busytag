@@ -5,14 +5,8 @@ import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import Soup from 'gi://Soup?version=3.0';
 
-function sendAndRead(session, msg) {
-    return new Promise((resolve, reject) => {
-        session.send_and_read_async(msg, GLib.PRIORITY_DEFAULT, null, (src, result) => {
-            try { resolve(src.send_and_read_finish(result)); }
-            catch (e) { reject(e); }
-        });
-    });
-}
+import { sendAndRead } from './lib/utils.js';
+import { isBusyTagMount } from './lib/busytag.js';
 
 export default class FocusmateBusyTagPrefs extends ExtensionPreferences {
     fillPreferencesWindow(window) {
@@ -110,6 +104,13 @@ export default class FocusmateBusyTagPrefs extends ExtensionPreferences {
         settings.bind('color-active', colorActiveRow, 'text', Gio.SettingsBindFlags.DEFAULT);
         group.add(colorActiveRow);
 
+        // Color upcoming
+        const colorUpcomingRow = new Adw.EntryRow({
+            title: 'Farbe im Upcoming-Zustand (Hex)',
+        });
+        settings.bind('color-upcoming', colorUpcomingRow, 'text', Gio.SettingsBindFlags.DEFAULT);
+        group.add(colorUpcomingRow);
+
         // Color idle
         const colorIdleRow = new Adw.EntryRow({
             title: 'Farbe im Idle-Zustand (Hex)',
@@ -179,19 +180,15 @@ export default class FocusmateBusyTagPrefs extends ExtensionPreferences {
     }
 
     _updateMountStatus(label) {
-        const volumeMonitor = Gio.VolumeMonitor.get();
-        const mounts = volumeMonitor.get_mounts();
-        for (const mount of mounts) {
-            const root = mount.get_root();
-            const path = root?.get_path();
-            if (path?.includes('BUSYTAG') || mount.get_name()?.includes('BUSYTAG')) {
-                label.label = `Gefunden: ${path}`;
-                label.add_css_class('success');
-                return;
-            }
+        const mounts = Gio.VolumeMonitor.get().get_mounts();
+        const found = mounts.find(m => isBusyTagMount(m));
+        if (found) {
+            label.label = `Gefunden: ${found.get_root()?.get_path()}`;
+            label.add_css_class('success');
+        } else {
+            label.label = 'Nicht gefunden';
+            label.add_css_class('warning');
         }
-        label.label = 'Nicht gefunden';
-        label.add_css_class('warning');
     }
 
     async _testApi(settings, button, window) {
@@ -237,9 +234,10 @@ export default class FocusmateBusyTagPrefs extends ExtensionPreferences {
         button.sensitive = false;
         button.label = '…';
 
+        let client = null;
         try {
             const { BusyTagClient } = await import('./lib/busytag.js');
-            const client = new BusyTagClient(this.path);
+            client = new BusyTagClient(this.path, settings);
             client.enable();
 
             await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 200, () => {
@@ -254,20 +252,19 @@ export default class FocusmateBusyTagPrefs extends ExtensionPreferences {
                     button.label = 'Testen';
                     return GLib.SOURCE_REMOVE;
                 });
-                client.destroy();
                 return;
             }
 
-            await client.setState(settings.get_string('color-active'), true);
+            await client.setState(settings.get_string('color-active'), 'active');
             await new Promise(resolve => GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 3, () => {
                 resolve();
                 return GLib.SOURCE_REMOVE;
             }));
-            await client.setState(settings.get_string('color-idle'), false);
-            client.destroy();
+            await client.setState(settings.get_string('color-idle'), 'idle');
         } catch (e) {
             console.log(`[focusmate-busytag] BusyTag test error: ${e}`);
         } finally {
+            client?.destroy();
             button.sensitive = true;
             button.label = 'Testen';
         }

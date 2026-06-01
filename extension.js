@@ -3,6 +3,7 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import St from 'gi://St';
+import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
@@ -58,6 +59,14 @@ class FocusmateIndicator extends PanelMenu.Button {
         refreshItem.connect('activate', () => this._scheduler?.forceRefresh());
         this.menu.addMenuItem(refreshItem);
 
+        const setRedItem = new PopupMenu.PopupMenuItem('BusyTag auf Rot schalten');
+        setRedItem.connect('activate', () => this._setManualColor(true));
+        this.menu.addMenuItem(setRedItem);
+
+        const setGreenItem = new PopupMenu.PopupMenuItem('BusyTag auf Grün schalten');
+        setGreenItem.connect('activate', () => this._setManualColor(false));
+        this.menu.addMenuItem(setGreenItem);
+
         const testItem = new PopupMenu.PopupMenuItem('BusyTag testen (rot 3s)');
         testItem.connect('activate', () => this._testBusyTag());
         this.menu.addMenuItem(testItem);
@@ -80,7 +89,7 @@ class FocusmateIndicator extends PanelMenu.Button {
         }
 
         this._focusmateClient = new FocusmateClient(apiKey);
-        this._busyTagClient = new BusyTagClient(this._extensionPath);
+        this._busyTagClient = new BusyTagClient(this._extensionPath, this._settings);
         this._busyTagClient.enable();
 
         this._scheduler = new Scheduler(
@@ -172,7 +181,11 @@ class FocusmateIndicator extends PanelMenu.Button {
             const prefix = isActive ? '● ' : '○ ';
             const endIso = new Date(s.endMs).toISOString();
             const timeRange = `${_formatTime(s.startTime)}–${_formatTime(endIso)}`;
-            const item = new PopupMenu.PopupMenuItem(`${prefix}${timeRange}`, { reactive: false });
+            const hasLink = !!s.videoUrl;
+            const label = hasLink ? `${prefix}${timeRange} →` : `${prefix}${timeRange}`;
+            const item = new PopupMenu.PopupMenuItem(label, { reactive: hasLink });
+            if (hasLink)
+                item.connect('activate', () => Gio.AppInfo.launch_default_for_uri(s.videoUrl, null));
             this.menu.addMenuItem(item, sepIdx + i);
             this._sessionItems.push(item);
         }
@@ -205,6 +218,20 @@ class FocusmateIndicator extends PanelMenu.Button {
             this.hide();
     }
 
+    _setManualColor(isBusy) {
+        if (!this._busyTagClient?.isConnected) {
+            Main.notify('Focusmate BusyTag', 'BusyTag nicht verbunden');
+            return;
+        }
+        const displayState = isBusy ? 'active' : 'idle';
+        const color = isBusy
+            ? this._settings.get_string('color-active')
+            : this._settings.get_string('color-idle');
+        this._busyTagClient.setState(color, displayState, true).catch(e => {
+            console.log(`[focusmate-busytag] Manuelles Schalten fehlgeschlagen: ${e}`);
+        });
+    }
+
     _testBusyTag() {
         if (!this._busyTagClient?.isConnected) {
             Main.notify('Focusmate BusyTag', 'BusyTag nicht gefunden');
@@ -212,9 +239,9 @@ class FocusmateIndicator extends PanelMenu.Button {
         }
         const activeColor = this._settings.get_string('color-active');
         const idleColor = this._settings.get_string('color-idle');
-        this._busyTagClient.setState(activeColor, true).then(() => {
+        this._busyTagClient.setState(activeColor, 'active').then(() => {
             GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 3, () => {
-                this._busyTagClient?.setState(idleColor, false);
+                this._busyTagClient?.setState(idleColor, 'idle');
                 return GLib.SOURCE_REMOVE;
             });
         }).catch(e => {
